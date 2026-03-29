@@ -1,83 +1,130 @@
-# DataFlow — CSV/Excel Search Tool
+# DATAFLOW 🚀
 
-A production-ready data search tool. Upload any CSV or Excel file and search through it instantly.
+## 📌 Overview
+
+**DATAFLOW** is a backend system designed to simplify searching and filtering through large datasets for non-technical users.
+
+Instead of manually scanning data or using inefficient methods like `Ctrl + F`, DATAFLOW provides structured APIs that allow users to quickly retrieve relevant information using filters and queries.
 
 ---
 
-## Setup (One Time)
+## 🎯 Problem Statement
 
-### 1. Install Python dependencies
+When datasets grow large:
 
-```bash
-cd dataflow
-pip install -r requirements.txt
+* Manual searching becomes slow and inefficient ❌
+* `Ctrl + F` does not handle structured filtering ❌
+* Non-technical users struggle to extract meaningful data ❌
+
+---
+
+## 💡 Solution
+
+DATAFLOW solves this by:
+
+* Providing **fast and structured data access**
+* Enabling **filter-based search instead of manual lookup**
+* Making data retrieval **simple and intuitive**
+
+---
+
+## ⚙️ Features
+
+* 🔍 Search data using filters
+* 📊 Handle large datasets efficiently
+* ⚡ Fast API responses
+* 🧠 Designed for non-technical users
+* 🗂️ Structured data retrieval
+
+---
+
+## 🏗️ Tech Stack
+
+* **Backend:** FastAPI
+* **Database:** SQLite / SQLAlchemy
+* **Validation:** Pydantic
+* **Deployment:** Render
+
+---
+
+## 🚀 API Endpoints
+
+### ➤ Get All Data
+
+```
+GET /items
 ```
 
-### 2. Run the backend
-
-```bash
-python main.py
-```
-
-Server starts at: http://localhost:8000
-
-### 3. Open the frontend
-
-Open `frontend/index.html` in your browser.
-
-> **Tip:** For a better experience, serve the frontend with a simple HTTP server:
-> ```bash
-> cd frontend
-> python -m http.server 3000
-> ```
-> Then open http://localhost:3000
-
----
-
-## Project Structure
+### ➤ Filter/Search Data
 
 ```
-dataflow/
-├── main.py              
-├── requirements.txt    
-├── database.db          
-├── frontend/
-│   └── index.html       
-└── utils/
-    ├── upload.py        
-    └── search.py        
+GET /items?field=value
+```
+
+Example:
+
+```
+GET /items?name=John
+GET /items?age=25
+```
+
+### ➤ Add New Data
+
+```
+POST /items
 ```
 
 ---
 
-## Features
+## 📦 Use Case
 
-| Feature | Description |
-|---|---|
-| Upload CSV/Excel | Drag & drop or click to upload |
-| Full-text search | Search across ALL columns at once |
-| Column filter | Search within a specific column |
-| Sort | Click any column header to sort |
-| Pagination | 20/50/100/200 rows per page |
-| Download | Export search results as CSV |
-| Highlight | Matching text highlighted in results |
+This system is useful for:
+
+* Businesses handling large records
+* Teams without technical expertise
+* Quick data lookup systems
+* Internal dashboards / tools
 
 ---
 
-## API Endpoints
+## 🌐 Live Demo
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/upload` | Upload file |
-| GET | `/api/data` | Get paginated data |
-| GET | `/api/search?q=...` | Search data |
-| GET | `/api/columns` | Get column names |
-| GET | `/api/download` | Download filtered CSV |
+👉 https://dataflow-0j20.onrender.com
 
 ---
 
-## For Usage
-**Live Project Link = https://dataflow-0j20.onrender.com**
-1. Upload the Excel/CSV file
-2. Type anything in the search box
-3. Hit Download to save results
+## 📚 Documentation
+
+Interactive API docs available at:
+
+```
+/docs
+```
+
+---
+
+## 🔮 Future Improvements
+
+* 🔐 Authentication (JWT-based access)
+* 📄 Pagination & advanced filtering
+* 🗄️ Migration to PostgreSQL
+* 🎨 Frontend dashboard for non-technical users
+* 📊 Analytics & insights
+
+---
+
+## 🤝 Contributing
+
+Feel free to fork the repository and improve the system.
+
+---
+
+## 👨‍💻 Author
+
+**Surya Pratap Singh**
+
+---
+
+## ⭐ Final Note
+
+DATAFLOW is built with the vision of making **data access simple, fast, and accessible for everyone**, regardless of technical background.

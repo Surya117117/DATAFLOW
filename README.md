@@ -97,23 +97,6 @@ Interactive API documentation available at:
 * Building systems for **real users, not just developers**
 * End-to-end deployment workflow on Render
 * Thinking about UX for non-technical audiences
-
----
-
-## 🔮 Future Improvements
-
-* 🔐 Authentication (JWT-based access)
-* 📊 Advanced filtering & query builder
-* 🗄️ Migration to PostgreSQL for scalability
-* 🎨 Enhanced frontend dashboard
-* 📈 Analytics and usage insights
-
----
-
-## 👨‍💻 Author
-
-**Surya Pratap Singh**
-
 ---
 
 ## ⭐ Final Note

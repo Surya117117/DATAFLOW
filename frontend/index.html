@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DataFlow — Your Data, Instantly</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --text: #f0f0f8;
+    --muted: #7070a0;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BACKGROUND GRAIN + GRADIENT */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(108,99,255,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 90%, rgba(67,233,123,0.07) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  /* HEADER */
+  header {
+    padding: 28px 0 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 1.5rem;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .logo span { color: var(--muted); font-weight: 400; font-size: 0.85rem; margin-left: 10px; }
+  .db-badge {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.8rem; color: var(--muted);
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: 999px;
+  }
+  .db-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent3); }
+
+  /* UPLOAD ZONE */
+  .upload-section { padding: 48px 0 32px; }
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 20px;
+    padding: 56px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-zone::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(108,99,255,0.06) 0%, transparent 70%);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 60px rgba(108,99,255,0.15);
+  }
+  .upload-zone:hover::before, .upload-zone.dragover::before { opacity: 1; }
+  .upload-icon {
+    width: 64px; height: 64px; margin: 0 auto 20px;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    box-shadow: 0 8px 32px rgba(108,99,255,0.3);
+  }
+  .upload-zone h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem; font-weight: 700; margin-bottom: 8px;
+  }
+  .upload-zone p { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+  .upload-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    color: white; border: none; padding: 12px 28px;
+    border-radius: 999px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500;
+    transition: all 0.2s; box-shadow: 0 4px 20px rgba(108,99,255,0.3);
+  }
+  .upload-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(108,99,255,0.4); }
+  .file-types { font-size: 0.75rem; color: var(--muted); margin-top: 14px; }
+  #fileInput { display: none; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(100px);
+    padding: 14px 24px; border-radius: 999px;
+    font-size: 0.9rem; font-weight: 500;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 9999; min-width: 260px; text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.success { background: #0d2b1a; border: 1px solid var(--accent3); color: var(--accent3); }
+  #toast.error { background: #2b0d17; border: 1px solid var(--accent2); color: var(--accent2); }
+  #toast.info { background: #0d1020; border: 1px solid var(--accent); color: #a78bfa; }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: none; align-items: center; gap: 16px;
+    padding: 14px 20px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .stats-bar.visible { display: flex; }
+  .stat { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .stat-label { color: var(--muted); }
+  .stat-val { color: var(--text); font-weight: 600; font-family: 'Syne', sans-serif; }
+  .stat-sep { width: 1px; height: 20px; background: var(--border); }
+
+  /* SEARCH BAR */
+  .search-section {
+    display: none; margin-bottom: 20px;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .search-section.visible { display: flex; }
+  .search-wrap {
+    flex: 1; min-width: 280px;
+    position: relative;
+  }
+  .search-wrap .icon {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    font-size: 18px; pointer-events: none; opacity: 0.5;
+  }
+  #searchInput {
+    width: 100%; padding: 14px 16px 14px 46px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  #searchInput:focus { border-color: var(--accent); }
+  #searchInput::placeholder { color: var(--muted); }
+  #colFilter {
+    padding: 14px 16px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; outline: none; cursor: pointer;
+    min-width: 160px;
+  }
+  #colFilter:focus { border-color: var(--accent); }
+  .btn-download {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 22px; border: none; border-radius: var(--radius);
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .btn-download:hover { border-color: var(--accent3); color: var(--accent3); }
+
+  /* RESULT LABEL */
+  .result-info {
+    display: none; font-size: 0.82rem; color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .result-info.visible { display: block; }
+  .result-info strong { color: var(--text); }
+
+  /* TABLE */
+  .table-wrap {
+    display: none; overflow: hidden;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .table-wrap.visible { display: block; }
+  .table-scroll { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead { position: sticky; top: 0; z-index: 2; }
+  thead tr { background: var(--surface2); }
+  th {
+    padding: 12px 16px; text-align: left; white-space: nowrap;
+    font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.78rem;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+    transition: color 0.2s;
+  }
+  th:hover { color: var(--text); }
+  th .sort-icon { opacity: 0.4; margin-left: 4px; }
+  th.sorted { color: var(--accent); }
+  th.sorted .sort-icon { opacity: 1; }
+  td {
+    padding: 11px 16px; border-bottom: 1px solid rgba(42,42,58,0.6);
+    color: var(--text); vertical-align: middle;
+    max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  tbody tr { transition: background 0.15s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:last-child td { border-bottom: none; }
+  .highlight { background: rgba(108,99,255,0.25); border-radius: 3px; padding: 1px 3px; }
+
+  /* PAGINATION */
+  .pagination {
+    display: none; align-items: center; justify-content: space-between;
+    padding: 16px 0; flex-wrap: wrap; gap: 12px;
+  }
+  .pagination.visible { display: flex; }
+  .page-info { font-size: 0.82rem; color: var(--muted); }
+  .page-btns { display: flex; gap: 6px; align-items: center; }
+  .page-btn {
+    padding: 8px 16px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+    transition: all 0.15s;
+  }
+  .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .page-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .page-size-sel {
+    padding: 8px 12px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+    outline: none; cursor: pointer;
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--muted);
+  }
+  .empty-state .big { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.9rem; }
+
+  /* LOADING SPINNER */
+  .loading { display: none; text-align: center; padding: 40px; }
+  .loading.show { display: block; }
+  .spinner {
+    display: inline-block; width: 36px; height: 36px;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* PROGRESS */
+  #uploadProgress {
+    display: none; margin-top: 20px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 99px; height: 6px; overflow: hidden;
+  }
+  #uploadProgress.show { display: block; }
+  #progressBar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 99px; transition: width 0.3s ease;
+  }
+
+  @media (max-width: 640px) {
+    .upload-zone { padding: 36px 20px; }
+    th, td { padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div>
+      <div class="logo">DataFlow <span style="-webkit-text-fill-color: var(--muted)">/ your data, instantly</span></div>
+    </div>
+    <div class="db-badge" id="dbBadge" style="display:none">
+      <div class="dot"></div>
+      <span id="dbFilename">No file</span>
+    </div>
+  </header>
+
+  <!-- UPLOAD -->
+  <div class="upload-section">
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon">📂</div>
+      <h2>Upload Your Data File</h2>
+      <p>Drag & drop your CSV or Excel file here, or click to browse</p>
+      <button class="upload-btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click();">
+        ➕ Choose File
+      </button>
+      <div class="file-types">Supports .csv, .xlsx, .xls — up to 100MB</div>
+      <div id="uploadProgress"><div id="progressBar"></div></div>
+    </div>
+    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls"/>
+  </div>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat"><span class="stat-label">File:</span><span class="stat-val" id="sFile">—</span></div>
+    <div class="stat-sep"></div>
+    <div class="stat"><span class="stat-label">Rows:</span><span class="stat-val" id="sRows">—</span></div>
+    <div class="stat-sep"></div>
+    <div class="stat"><span class="stat-label">Columns:</span><span class="stat-val" id="sCols">—</span></div>
+    <div class="stat-sep"></div>
+    <div class="stat"><span class="stat-label">Showing:</span><span class="stat-val" id="sShowing">—</span></div>
+  </div>
+
+  <!-- SEARCH BAR -->
+  <div class="search-section" id="searchSection">
+    <div class="search-wrap">
+      <span class="icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search anything — name, ID, city, phone..."/>
+    </div>
+    <select id="colFilter">
+      <option value="">All Columns</option>
+    </select>
+    <button class="btn-download" onclick="downloadCSV()">⬇ Download</button>
+  </div>
+
+  <!-- RESULT INFO -->
+  <div class="result-info" id="resultInfo"></div>
+
+  <!-- LOADING -->
+  <div class="loading" id="loading"><div class="spinner"></div></div>
+
+  <!-- TABLE -->
+  <div class="table-wrap" id="tableWrap">
+    <div class="table-scroll">
+      <table id="dataTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PAGINATION -->
+  <div class="pagination" id="pagination">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="page-info" id="pageInfo">—</span>
+      <select class="page-size-sel" id="pageSizeSel">
+        <option value="20">20 / page</option>
+        <option value="50" selected>50 / page</option>
+        <option value="100">100 / page</option>
+        <option value="200">200 / page</option>
+      </select>
+    </div>
+    <div class="page-btns" id="pageBtns"></div>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+const API = '/api';
+let state = {
+  page: 1,
+  pageSize: 50,
+  query: '',
+  colFilter: '',
+  sortCol: '',
+  sortDir: 'asc',
+  total: 0,
+  columns: [],
+  hasData: false
+};
+let searchTimer = null;
+
+// ─── TOAST ────────────────────────────────────────────────
+function showToast(msg, type = 'info', duration = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  setTimeout(() => el.className = '', duration);
+}
+
+// ─── UPLOAD ───────────────────────────────────────────────
+const zone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+// Zone click opens file picker (but not if clicking the button itself)
+zone.addEventListener('click', e => {
+  if (e.target.classList.contains('upload-btn') || e.target === fileInput) return;
+  fileInput.click();
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+
+async function handleFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['csv', 'xlsx', 'xls'].includes(ext)) {
+    showToast('❌ Invalid format. Use CSV or Excel files.', 'error'); return;
+  }
+  if (file.size === 0) { showToast('❌ File is empty!', 'error'); return; }
+
+  // Fake progress
+  const prog = document.getElementById('uploadProgress');
+  const bar = document.getElementById('progressBar');
+  prog.classList.add('show');
+  let pct = 0;
+  const ticker = setInterval(() => { pct = Math.min(pct + Math.random() * 15, 85); bar.style.width = pct + '%'; }, 200);
+
+  showToast('⏳ Uploading...', 'info', 10000);
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await fetch(`${API}/upload`, { method: 'POST', body: fd });
+    const data = await res.json();
+    clearInterval(ticker); bar.style.width = '100%';
+    setTimeout(() => { prog.classList.remove('show'); bar.style.width = '0%'; }, 600);
+
+    if (!res.ok) { showToast(`❌ ${data.detail || 'Upload failed'}`, 'error'); return; }
+
+    showToast(`✅ ${data.rows.toLocaleString()} rows loaded!`, 'success', 4000);
+    state.columns = data.column_names;
+    state.hasData = true;
+    state.page = 1;
+    state.query = '';
+    state.colFilter = '';
+    document.getElementById('searchInput').value = '';
+
+    document.getElementById('dbFilename').textContent = file.name;
+    document.getElementById('dbBadge').style.display = 'flex';
+    document.getElementById('sFile').textContent = file.name;
+    document.getElementById('sRows').textContent = data.rows.toLocaleString();
+    document.getElementById('sCols').textContent = data.columns;
+    document.getElementById('statsBar').classList.add('visible');
+    document.getElementById('searchSection').classList.add('visible');
+
+    buildColFilter(data.column_names);
+    loadData();
+  } catch (err) {
+    clearInterval(ticker); prog.classList.remove('show');
+    showToast('❌ Could not connect to server.', 'error');
+  }
+}
+
+// ─── COLUMN FILTER ────────────────────────────────────────
+function buildColFilter(cols) {
+  const sel = document.getElementById('colFilter');
+  sel.innerHTML = '<option value="">All Columns</option>';
+  cols.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', () => { state.colFilter = sel.value; state.page = 1; loadData(); });
+}
+
+// ─── SEARCH ───────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    state.query = e.target.value.trim();
+    state.page = 1;
+    loadData();
+  }, 300);
+});
+
+// ─── PAGE SIZE ────────────────────────────────────────────
+document.getElementById('pageSizeSel').addEventListener('change', e => {
+  state.pageSize = +e.target.value;
+  state.page = 1;
+  loadData();
+});
+
+// ─── LOAD DATA ────────────────────────────────────────────
+async function loadData() {
+  if (!state.hasData) return;
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('tableWrap').classList.remove('visible');
+  document.getElementById('pagination').classList.remove('visible');
+
+  try {
+    let url;
+    if (state.query) {
+      url = `${API}/search?q=${encodeURIComponent(state.query)}&page=${state.page}&page_size=${state.pageSize}`;
+      if (state.colFilter) url += `&col_filter=${encodeURIComponent(state.colFilter)}`;
+    } else {
+      url = `${API}/data?page=${state.page}&page_size=${state.pageSize}`;
+      if (state.sortCol) url += `&sort_col=${encodeURIComponent(state.sortCol)}&sort_dir=${state.sortDir}`;
+    }
+
+    const res = await fetch(url);
+    const data = await res.json();
+    state.total = data.total;
+    if (data.columns && data.columns.length) state.columns = data.columns;
+
+    renderTable(data.data, data.columns || state.columns, state.query);
+    renderPagination(data.total);
+    updateResultInfo(data.total);
+    document.getElementById('sShowing').textContent = `${((state.page-1)*state.pageSize+1).toLocaleString()}–${Math.min(state.page*state.pageSize, data.total).toLocaleString()} of ${data.total.toLocaleString()}`;
+  } catch(err) {
+    showToast('❌ Error fetching data.', 'error');
+  }
+  document.getElementById('loading').classList.remove('show');
+}
+
+// ─── RENDER TABLE ─────────────────────────────────────────
+function renderTable(rows, cols, query) {
+  const head = document.getElementById('tableHead');
+  const body = document.getElementById('tableBody');
+
+  // Build header
+  head.innerHTML = '';
+  const tr = document.createElement('tr');
+  cols.forEach(col => {
+    const th = document.createElement('th');
+    const label = col.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const isSort = state.sortCol === col;
+    th.innerHTML = `${label} <span class="sort-icon">${isSort ? (state.sortDir === 'asc' ? '↑' : '↓') : '↕'}</span>`;
+    if (isSort) th.classList.add('sorted');
+    th.addEventListener('click', () => {
+      if (state.sortCol === col) {
+        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.sortCol = col; state.sortDir = 'asc';
+      }
+      state.page = 1; loadData();
+    });
+    tr.appendChild(th);
+  });
+  head.appendChild(tr);
+
+  // Build body
+  body.innerHTML = '';
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = cols.length;
+    td.innerHTML = `<div class="empty-state"><div class="big">🔍</div><p>No results found. Try a different search term.</p></div>`;
+    tr.appendChild(td); body.appendChild(tr);
+  } else {
+    rows.forEach(row => {
+      const tr = document.createElement('tr');
+      cols.forEach(col => {
+        const td = document.createElement('td');
+        const val = row[col] !== undefined ? String(row[col]) : '';
+        td.textContent = val;
+        td.title = val;
+        if (query && val.toLowerCase().includes(query.toLowerCase())) {
+          const re = new RegExp(`(${escapeReg(query)})`, 'gi');
+          td.innerHTML = val.replace(re, '<mark class="highlight">$1</mark>');
+        }
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById('tableWrap').classList.add('visible');
+  document.getElementById('resultInfo').classList.add('visible');
+}
+
+function escapeReg(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+// ─── PAGINATION ───────────────────────────────────────────
+function renderPagination(total) {
+  const pages = Math.ceil(total / state.pageSize);
+  const pg = document.getElementById('pagination');
+  const btns = document.getElementById('pageBtns');
+  const info = document.getElementById('pageInfo');
+
+  info.textContent = `Page ${state.page} of ${pages || 1}`;
+  btns.innerHTML = '';
+
+  const addBtn = (label, page, active = false) => {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (active ? ' active' : '');
+    b.textContent = label;
+    b.disabled = page < 1 || page > pages;
+    b.onclick = () => { state.page = page; loadData(); };
+    btns.appendChild(b);
+  };
+
+  addBtn('← Prev', state.page - 1);
+
+  let start = Math.max(1, state.page - 2);
+  let end = Math.min(pages, start + 4);
+  if (end - start < 4) start = Math.max(1, end - 4);
+
+  if (start > 1) { addBtn('1', 1); if (start > 2) btns.insertAdjacentHTML('beforeend', '<span style="color:var(--muted);padding:0 4px">…</span>'); }
+  for (let i = start; i <= end; i++) addBtn(i, i, i === state.page);
+  if (end < pages) { btns.insertAdjacentHTML('beforeend', '<span style="color:var(--muted);padding:0 4px">…</span>'); addBtn(pages, pages); }
+
+  addBtn('Next →', state.page + 1);
+  pg.classList.add('visible');
+}
+
+// ─── RESULT INFO ──────────────────────────────────────────
+function updateResultInfo(total) {
+  const el = document.getElementById('resultInfo');
+  const from = ((state.page - 1) * state.pageSize + 1).toLocaleString();
+  const to = Math.min(state.page * state.pageSize, total).toLocaleString();
+  if (state.query) {
+    el.innerHTML = `<strong>${total.toLocaleString()}</strong> results for "<strong>${state.query}</strong>" — showing ${from}–${to}`;
+  } else {
+    el.innerHTML = `Showing <strong>${from}–${to}</strong> of <strong>${total.toLocaleString()}</strong> records`;
+  }
+}
+
+// ─── DOWNLOAD ─────────────────────────────────────────────
+function downloadCSV() {
+  if (!state.hasData) { showToast('Upload a file first!', 'error'); return; }
+  let url = `${API}/download`;
+  const params = [];
+  if (state.query) params.push(`q=${encodeURIComponent(state.query)}`);
+  if (state.colFilter) params.push(`col_filter=${encodeURIComponent(state.colFilter)}`);
+  if (params.length) url += '?' + params.join('&');
+
+  const a = document.createElement('a');
+  a.href = url; a.download = 'export.csv';
+  a.click();
+  showToast('⬇ Downloading...', 'success');
+}
+</script>
+</body>
+</html>
